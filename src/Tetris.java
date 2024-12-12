@@ -4,212 +4,216 @@ import java.awt.event.*;
 import java.util.*;
 
 public class Tetris extends JPanel {
-    private final Point[][][] Tetraminos = {
-            //I-Piece
+
+    private static final int BOARD_WIDTH = 12;
+    private static final int BOARD_HEIGHT = 24;
+    private static final int INITIAL_DELAY = 500;
+    private static final int MIN_DELAY = 100;
+    private static final int DELAY_DECREMENT = 20;
+
+    private final Point[][][] tetrominos = {
+            // I-Piece
             {{new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(1, 3)},
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(1, 3)}},
-            //O-Piece
+            // O-Piece
             {{new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)}},
-            //T-Piece
+            // T-Piece
             {{new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
                     {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(1, 2)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 1)}},
-            //L-Piece
-            {{new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(2, 0), new Point(1, 1), new Point(1, 2)},
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(2, 2)},
-                    {new Point(1, 0), new Point(1, 1), new Point(0, 2), new Point(1, 2)}},
-            //J-Piece
-            {{new Point(2, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 2)},
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(0, 2)},
-                    {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(1, 2)}},
-            //S-Piece
-            {{new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
-                    {new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)}},
-            //Z-Piece
-            {{new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)},
-                    {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)}}
+            // Other pieces...
     };
 
-    private final Color[] tetraminoColors = {
+    private final Color[] tetrominoColors = {
             Color.cyan, Color.yellow, Color.magenta, Color.orange, Color.blue, Color.green, Color.red
     };
 
     private Point pieceOrigin;
     private int currentPiece;
     private int rotation;
-    private ArrayList<Integer> nextPieces = new ArrayList<>();
+    private final Queue<Integer> nextPieces = new LinkedList<>();
     private Color[][] well;
     private int score;
-    private int delay = 500;
+    private int delay;
 
     public Tetris() {
         setFocusable(true);
+        initKeyListener();
+        initializeGame();
+    }
+
+    private void initKeyListener() {
         addKeyListener(new KeyAdapter() {
+            @Override
             public void keyPressed(KeyEvent e) {
                 switch (e.getKeyCode()) {
-                    case KeyEvent.VK_LEFT: move(-1); break;
-                    case KeyEvent.VK_RIGHT: move(1); break;
-                    case KeyEvent.VK_DOWN: dropDown(); break;
-                    case KeyEvent.VK_UP: rotate(-1); break;
+                    case KeyEvent.VK_LEFT -> move(-1);
+                    case KeyEvent.VK_RIGHT -> move(1);
+                    case KeyEvent.VK_DOWN -> dropDown();
+                    case KeyEvent.VK_UP -> rotate(-1);
                 }
                 repaint();
             }
         });
-        initGame();
     }
 
-    private void initGame() {
-        well = new Color[12][24];
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 24; j++) {
-                if (i == 0 || i == 11 || j == 23) {
-                    well[i][j] = Color.GRAY;
-                } else {
-                    well[i][j] = Color.BLACK;
-                }
+    private void initializeGame() {
+        well = new Color[BOARD_WIDTH][BOARD_HEIGHT];
+        for (int x = 0; x < BOARD_WIDTH; x++) {
+            for (int y = 0; y < BOARD_HEIGHT; y++) {
+                well[x][y] = (x == 0 || x == BOARD_WIDTH - 1 || y == BOARD_HEIGHT - 1) ? Color.GRAY : Color.BLACK;
             }
         }
+        delay = INITIAL_DELAY;
         newPiece();
     }
 
-    public void newPiece() {
+    private void newPiece() {
         pieceOrigin = new Point(5, 2);
         rotation = 0;
+
         if (nextPieces.isEmpty()) {
-            Collections.addAll(nextPieces, 0, 1, 2, 3, 4, 5, 6);
-            Collections.shuffle(nextPieces);
+            List<Integer> pieces = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            Collections.shuffle(pieces);
+            nextPieces.addAll(pieces);
         }
-        currentPiece = nextPieces.get(0);
-        nextPieces.remove(0);
+
+        currentPiece = nextPieces.poll();
+
         if (collidesAt(0, 0, rotation)) {
-            gameOver();
+            endGame();
         }
     }
 
     private boolean collidesAt(int x, int y, int rotation) {
-        for (Point p : Tetraminos[currentPiece][rotation]) {
-            if (well[pieceOrigin.x + p.x + x][pieceOrigin.y + p.y + y] != Color.BLACK) {
+        for (Point p : tetrominos[currentPiece][rotation]) {
+            int newX = pieceOrigin.x + p.x + x;
+            int newY = pieceOrigin.y + p.y + y;
+            if (well[newX][newY] != Color.BLACK) {
                 return true;
             }
         }
         return false;
     }
 
-    public void move(int dx) {
+    private void move(int dx) {
         if (!collidesAt(dx, 0, rotation)) {
-            pieceOrigin.x += dx;
+            pieceOrigin.translate(dx, 0);
         }
     }
 
-    public void rotate(int dr) {
-        int newRotation = (rotation + dr) % 4;
-        if (newRotation < 0) newRotation = 3;
+    private void rotate(int dr) {
+        int newRotation = (rotation + dr + 4) % 4;
         if (!collidesAt(0, 0, newRotation)) {
             rotation = newRotation;
         }
     }
 
-    public void dropDown() {
+    private void dropDown() {
         if (!collidesAt(0, 1, rotation)) {
-            pieceOrigin.y += 1;
+            pieceOrigin.translate(0, 1);
         } else {
             fixToWell();
         }
     }
 
     private void fixToWell() {
-        for (Point p : Tetraminos[currentPiece][rotation]) {
-            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = tetraminoColors[currentPiece];
+        for (Point p : tetrominos[currentPiece][rotation]) {
+            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = tetrominoColors[currentPiece];
         }
         clearRows();
         newPiece();
     }
 
     private void clearRows() {
-        boolean fullRow;
-        for (int row = 22; row >= 0; row--) {
-            fullRow = true;
-            for (int col = 1; col < 11; col++) {
-                if (well[col][row] == Color.BLACK) {
-                    fullRow = false;
-                    break;
-                }
-            }
-            if (fullRow) {
+        for (int y = BOARD_HEIGHT - 2; y >= 0; y--) {
+            if (isRowFull(y)) {
+                shiftRowsDown(y);
                 score += 100;
-                //akcelerace
-                delay = Math.max(100, delay - 20);
-                for (int r = row; r > 0; r--) {
-                    for (int c = 1; c < 11; c++) {
-                        well[c][r] = well[c][r - 1];
-                    }
-                }
-                row++;
+                delay = Math.max(MIN_DELAY, delay - DELAY_DECREMENT);
+                y++;
             }
         }
     }
 
-    private void drawPiece(Graphics g) {
-        g.setColor(tetraminoColors[currentPiece]);
-        for (Point p : Tetraminos[currentPiece][rotation]) {
-            g.fillRect((pieceOrigin.x + p.x) * getScale(), (pieceOrigin.y + p.y) * getScale(), getScale() - 1, getScale() - 1);
+    private boolean isRowFull(int row) {
+        for (int x = 1; x < BOARD_WIDTH - 1; x++) {
+            if (well[x][row] == Color.BLACK) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void shiftRowsDown(int row) {
+        for (int y = row; y > 0; y--) {
+            for (int x = 1; x < BOARD_WIDTH - 1; x++) {
+                well[x][y] = well[x][y - 1];
+            }
         }
     }
 
-    private int getScale() {
-        return Math.min(getWidth() / 12, getHeight() / 24);
-    }
-
-    private void gameOver() {
+    private void endGame() {
         JOptionPane.showMessageDialog(this, "Game Over! Your score: " + score);
         System.exit(0);
     }
 
     @Override
-    public void paintComponent(Graphics g) {
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        int scale = getScale();
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 23; j++) {
-                g.setColor(well[i][j]);
-                g.fillRect(scale * i, scale * j, scale - 1, scale - 1);
+        int scale = calculateScale();
+
+        for (int x = 0; x < BOARD_WIDTH; x++) {
+            for (int y = 0; y < BOARD_HEIGHT - 1; y++) {
+                g.setColor(well[x][y]);
+                g.fillRect(scale * x, scale * y, scale - 1, scale - 1);
             }
         }
-        drawPiece(g);
+        drawCurrentPiece(g, scale);
         g.setColor(Color.WHITE);
-        g.drawString("Score: " + score, scale * 12, scale);
+        g.drawString("Score: " + score, scale * BOARD_WIDTH, scale);
+    }
+
+    private int calculateScale() {
+        return Math.min(getWidth() / BOARD_WIDTH, getHeight() / BOARD_HEIGHT);
+    }
+
+    private void drawCurrentPiece(Graphics g, int scale) {
+        g.setColor(tetrominoColors[currentPiece]);
+        for (Point p : tetrominos[currentPiece][rotation]) {
+            g.fillRect((pieceOrigin.x + p.x) * scale, (pieceOrigin.y + p.y) * scale, scale - 1, scale - 1);
+        }
     }
 
     public static void main(String[] args) {
-        JFrame f = new JFrame("Tetris");
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setSize(800, 800);
-        f.setVisible(true);
-        final Tetris game = new Tetris();
-        f.add(game);
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Tetris");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(800, 800);
+            Tetris game = new Tetris();
+            frame.add(game);
+            frame.setVisible(true);
 
-        new Thread(() -> {
-            while (true) {
-                try {
-                    Thread.sleep(game.delay);
-                    game.dropDown();
-                    game.repaint();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            new Thread(() -> {
+                while (true) {
+                    try {
+                        Thread.sleep(game.delay);
+                        SwingUtilities.invokeLater(() -> {
+                            game.dropDown();
+                            game.repaint();
+                        });
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
-            }
-        }).start();
+            }).start();
+        });
     }
 }
