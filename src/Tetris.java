@@ -5,37 +5,37 @@ import java.util.*;
 
 public class Tetris extends JPanel {
     private final Point[][][] Tetraminos = {
-            // I-Piece
+            //I-Piece
             {{new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(1, 3)},
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(1, 3)}},
-            // O-Piece
+            //O-Piece
             {{new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)}},
-            // T-Piece
+            //T-Piece
             {{new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
                     {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(1, 2)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 1)}},
-            // L-Piece
+            //L-Piece
             {{new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
                     {new Point(1, 0), new Point(2, 0), new Point(1, 1), new Point(1, 2)},
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(2, 2)},
                     {new Point(1, 0), new Point(1, 1), new Point(0, 2), new Point(1, 2)}},
-            // J-Piece
+            //J-Piece
             {{new Point(2, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 2)},
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(0, 2)},
                     {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(1, 2)}},
-            // S-Piece
+            //S-Piece
             {{new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
                     {new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)}},
-            // Z-Piece
+            //Z-Piece
             {{new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
                     {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)},
                     {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
@@ -149,7 +149,8 @@ public class Tetris extends JPanel {
             }
             if (fullRow) {
                 score += 100;
-                delay = Math.max(100, delay - 20); // Accelerate the game
+                //akcelerace
+                delay = Math.max(100, delay - 20);
                 for (int r = row; r > 0; r--) {
                     for (int c = 1; c < 11; c++) {
                         well[c][r] = well[c][r - 1];
@@ -194,7 +195,7 @@ public class Tetris extends JPanel {
     public static void main(String[] args) {
         JFrame f = new JFrame("Tetris");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setSize(800, 800); // Adjusted for dynamic scaling
+        f.setSize(800, 800);
         f.setVisible(true);
         final Tetris game = new Tetris();
         f.add(game);
