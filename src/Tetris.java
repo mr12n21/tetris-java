@@ -1,7 +1,11 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class Tetris extends JPanel {
 
@@ -27,7 +31,26 @@ public class Tetris extends JPanel {
                     {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(1, 2)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 1)}},
-            // Other pieces...
+            // L-Piece
+            {{new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
+                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 2)},
+                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(2, 0)},
+                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(0, 0)}},
+            // J-Piece
+            {{new Point(2, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
+                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 0)},
+                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(0, 0)},
+                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(0, 2)}},
+            // S-Piece
+            {{new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
+                    {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
+                    {new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
+                    {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)}},
+            // Z-Piece
+            {{new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
+                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)},
+                    {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
+                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)}}
     };
 
     private final Color[] tetrominoColors = {
@@ -79,7 +102,7 @@ public class Tetris extends JPanel {
         rotation = 0;
 
         if (nextPieces.isEmpty()) {
-            List<Integer> pieces = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            ArrayList<Integer> pieces = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
             Collections.shuffle(pieces);
             nextPieces.addAll(pieces);
         }
@@ -95,7 +118,7 @@ public class Tetris extends JPanel {
         for (Point p : tetrominos[currentPiece][rotation]) {
             int newX = pieceOrigin.x + p.x + x;
             int newY = pieceOrigin.y + p.y + y;
-            if (well[newX][newY] != Color.BLACK) {
+            if (newX < 0 || newX >= BOARD_WIDTH || newY < 0 || newY >= BOARD_HEIGHT || well[newX][newY] != Color.BLACK) {
                 return true;
             }
         }
