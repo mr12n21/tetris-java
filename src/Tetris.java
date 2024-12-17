@@ -64,6 +64,8 @@ public class Tetris extends JPanel {
     private Color[][] well;
     private int score;
     private int delay;
+    private boolean gameOverShown = false;
+    private boolean isGameOver = false; // Nová proměnná pro kontrolu konce hry
 
     public Tetris() {
         setFocusable(true);
@@ -75,6 +77,7 @@ public class Tetris extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
+                if (isGameOver) return; // Blokování pohybu po konci hry
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_LEFT -> move(-1);
                     case KeyEvent.VK_RIGHT -> move(1);
@@ -98,6 +101,8 @@ public class Tetris extends JPanel {
     }
 
     private void newPiece() {
+        if (isGameOver) return;
+
         pieceOrigin = new Point(5, 2);
         rotation = 0;
 
@@ -183,14 +188,17 @@ public class Tetris extends JPanel {
     }
 
     private void endGame() {
-        JOptionPane.showMessageDialog(this, "Game Over! Your score: " + score);
-        System.exit(0);
+        if (!gameOverShown) {
+            gameOverShown = true;
+            isGameOver = true;
+            JOptionPane.showMessageDialog(this, "Game Over! Your score: " + score);
+        }
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        int scale = calculateScale();
+        int scale = Math.min(getWidth() / BOARD_WIDTH, getHeight() / BOARD_HEIGHT);
 
         for (int x = 0; x < BOARD_WIDTH; x++) {
             for (int y = 0; y < BOARD_HEIGHT - 1; y++) {
@@ -198,13 +206,11 @@ public class Tetris extends JPanel {
                 g.fillRect(scale * x, scale * y, scale - 1, scale - 1);
             }
         }
-        drawCurrentPiece(g, scale);
+        if (!isGameOver) {
+            drawCurrentPiece(g, scale);
+        }
         g.setColor(Color.WHITE);
         g.drawString("Score: " + score, scale * BOARD_WIDTH, scale);
-    }
-
-    private int calculateScale() {
-        return Math.min(getWidth() / BOARD_WIDTH, getHeight() / BOARD_HEIGHT);
     }
 
     private void drawCurrentPiece(Graphics g, int scale) {
@@ -224,7 +230,7 @@ public class Tetris extends JPanel {
             frame.setVisible(true);
 
             new Thread(() -> {
-                while (true) {
+                while (!game.isGameOver) {
                     try {
                         Thread.sleep(game.delay);
                         SwingUtilities.invokeLater(() -> {
