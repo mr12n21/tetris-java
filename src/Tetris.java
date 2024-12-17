@@ -1,11 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 public class Tetris extends JPanel {
 
@@ -64,8 +60,6 @@ public class Tetris extends JPanel {
     private Color[][] well;
     private int score;
     private int delay;
-    private boolean gameOverShown = false;
-    private boolean isGameOver = false; // Nová proměnná pro kontrolu konce hry
 
     public Tetris() {
         setFocusable(true);
@@ -77,12 +71,11 @@ public class Tetris extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (isGameOver) return; // Blokování pohybu po konci hry
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_LEFT -> move(-1);
                     case KeyEvent.VK_RIGHT -> move(1);
                     case KeyEvent.VK_DOWN -> dropDown();
-                    case KeyEvent.VK_UP -> rotate(-1);
+                    case KeyEvent.VK_UP -> rotate(1);
                 }
                 repaint();
             }
@@ -101,13 +94,11 @@ public class Tetris extends JPanel {
     }
 
     private void newPiece() {
-        if (isGameOver) return;
-
         pieceOrigin = new Point(5, 2);
         rotation = 0;
 
         if (nextPieces.isEmpty()) {
-            ArrayList<Integer> pieces = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
+            List<Integer> pieces = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
             Collections.shuffle(pieces);
             nextPieces.addAll(pieces);
         }
@@ -119,17 +110,6 @@ public class Tetris extends JPanel {
         }
     }
 
-    private boolean collidesAt(int x, int y, int rotation) {
-        for (Point p : tetrominos[currentPiece][rotation]) {
-            int newX = pieceOrigin.x + p.x + x;
-            int newY = pieceOrigin.y + p.y + y;
-            if (newX < 0 || newX >= BOARD_WIDTH || newY < 0 || newY >= BOARD_HEIGHT || well[newX][newY] != Color.BLACK) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private void move(int dx) {
         if (!collidesAt(dx, 0, rotation)) {
             pieceOrigin.translate(dx, 0);
@@ -138,9 +118,33 @@ public class Tetris extends JPanel {
 
     private void rotate(int dr) {
         int newRotation = (rotation + dr + 4) % 4;
-        if (!collidesAt(0, 0, newRotation)) {
+        if (tryRotate(newRotation)) {
             rotation = newRotation;
         }
+    }
+
+    private boolean tryRotate(int newRotation) {
+        if (!collidesAt(0, 0, newRotation)) return true;
+        if (!collidesAt(-1, 0, newRotation)) {
+            pieceOrigin.translate(-1, 0);
+            return true;
+        }
+        if (!collidesAt(1, 0, newRotation)) {
+            pieceOrigin.translate(1, 0);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean collidesAt(int dx, int dy, int rotation) {
+        for (Point p : tetrominos[currentPiece][rotation]) {
+            int x = pieceOrigin.x + p.x + dx;
+            int y = pieceOrigin.y + p.y + dy;
+            if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT || well[x][y] != Color.BLACK) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void dropDown() {
@@ -172,9 +176,7 @@ public class Tetris extends JPanel {
 
     private boolean isRowFull(int row) {
         for (int x = 1; x < BOARD_WIDTH - 1; x++) {
-            if (well[x][row] == Color.BLACK) {
-                return false;
-            }
+            if (well[x][row] == Color.BLACK) return false;
         }
         return true;
     }
@@ -188,11 +190,8 @@ public class Tetris extends JPanel {
     }
 
     private void endGame() {
-        if (!gameOverShown) {
-            gameOverShown = true;
-            isGameOver = true;
-            JOptionPane.showMessageDialog(this, "Game Over! Your score: " + score);
-        }
+        JOptionPane.showMessageDialog(this, "Game Over! Your score: " + score);
+        System.exit(0);
     }
 
     @Override
@@ -206,9 +205,7 @@ public class Tetris extends JPanel {
                 g.fillRect(scale * x, scale * y, scale - 1, scale - 1);
             }
         }
-        if (!isGameOver) {
-            drawCurrentPiece(g, scale);
-        }
+        drawCurrentPiece(g, scale);
         g.setColor(Color.WHITE);
         g.drawString("Score: " + score, scale * BOARD_WIDTH, scale);
     }
@@ -223,25 +220,15 @@ public class Tetris extends JPanel {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Tetris");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(800, 800);
             Tetris game = new Tetris();
             frame.add(game);
+            frame.setSize(400, 800);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setVisible(true);
 
-            new Thread(() -> {
-                while (!game.isGameOver) {
-                    try {
-                        Thread.sleep(game.delay);
-                        SwingUtilities.invokeLater(() -> {
-                            game.dropDown();
-                            game.repaint();
-                        });
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
+            new Timer(game.delay, e -> {
+                game.dropDown();
+                game.repaint();
             }).start();
         });
     }
