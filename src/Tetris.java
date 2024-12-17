@@ -18,10 +18,7 @@ public class Tetris extends JPanel {
                     {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(1, 3)}},
             // O-Piece
-            {{new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)}},
+            {{new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)}},
             // T-Piece
             {{new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
                     {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
@@ -39,13 +36,9 @@ public class Tetris extends JPanel {
                     {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(0, 2)}},
             // S-Piece
             {{new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
-                    {new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
                     {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)}},
             // Z-Piece
             {{new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)},
-                    {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
                     {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)}}
     };
 
@@ -60,6 +53,7 @@ public class Tetris extends JPanel {
     private Color[][] well;
     private int score;
     private int delay;
+    private Timer timer;
 
     public Tetris() {
         setFocusable(true);
@@ -75,7 +69,7 @@ public class Tetris extends JPanel {
                     case KeyEvent.VK_LEFT -> move(-1);
                     case KeyEvent.VK_RIGHT -> move(1);
                     case KeyEvent.VK_DOWN -> dropDown();
-                    case KeyEvent.VK_UP -> rotate(1);
+                    case KeyEvent.VK_UP -> rotate();
                 }
                 repaint();
             }
@@ -90,6 +84,11 @@ public class Tetris extends JPanel {
             }
         }
         delay = INITIAL_DELAY;
+        timer = new javax.swing.Timer(delay, e -> {
+            dropDown();
+            repaint();
+        });
+        timer.start();
         newPiece();
     }
 
@@ -98,16 +97,28 @@ public class Tetris extends JPanel {
         rotation = 0;
 
         if (nextPieces.isEmpty()) {
-            List<Integer> pieces = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+            ArrayList<Integer> pieces = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
             Collections.shuffle(pieces);
             nextPieces.addAll(pieces);
         }
 
         currentPiece = nextPieces.poll();
-
         if (collidesAt(0, 0, rotation)) {
-            endGame();
+            timer.stop();
+            JOptionPane.showMessageDialog(this, "Game Over! Your score: " + score);
+            System.exit(0);
         }
+    }
+
+    private boolean collidesAt(int x, int y, int rotation) {
+        for (Point p : tetrominos[currentPiece][rotation]) {
+            int newX = pieceOrigin.x + p.x + x;
+            int newY = pieceOrigin.y + p.y + y;
+            if (well[newX][newY] != Color.BLACK) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void move(int dx) {
@@ -116,35 +127,11 @@ public class Tetris extends JPanel {
         }
     }
 
-    private void rotate(int dr) {
-        int newRotation = (rotation + dr + 4) % 4;
-        if (tryRotate(newRotation)) {
+    private void rotate() {
+        int newRotation = (rotation + 1) % tetrominos[currentPiece].length;
+        if (!collidesAt(0, 0, newRotation)) {
             rotation = newRotation;
         }
-    }
-
-    private boolean tryRotate(int newRotation) {
-        if (!collidesAt(0, 0, newRotation)) return true;
-        if (!collidesAt(-1, 0, newRotation)) {
-            pieceOrigin.translate(-1, 0);
-            return true;
-        }
-        if (!collidesAt(1, 0, newRotation)) {
-            pieceOrigin.translate(1, 0);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean collidesAt(int dx, int dy, int rotation) {
-        for (Point p : tetrominos[currentPiece][rotation]) {
-            int x = pieceOrigin.x + p.x + dx;
-            int y = pieceOrigin.y + p.y + dy;
-            if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT || well[x][y] != Color.BLACK) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void dropDown() {
@@ -169,6 +156,7 @@ public class Tetris extends JPanel {
                 shiftRowsDown(y);
                 score += 100;
                 delay = Math.max(MIN_DELAY, delay - DELAY_DECREMENT);
+                timer.setDelay(delay);
                 y++;
             }
         }
@@ -176,7 +164,9 @@ public class Tetris extends JPanel {
 
     private boolean isRowFull(int row) {
         for (int x = 1; x < BOARD_WIDTH - 1; x++) {
-            if (well[x][row] == Color.BLACK) return false;
+            if (well[x][row] == Color.BLACK) {
+                return false;
+            }
         }
         return true;
     }
@@ -187,11 +177,6 @@ public class Tetris extends JPanel {
                 well[x][y] = well[x][y - 1];
             }
         }
-    }
-
-    private void endGame() {
-        JOptionPane.showMessageDialog(this, "Game Over! Your score: " + score);
-        System.exit(0);
     }
 
     @Override
@@ -220,16 +205,10 @@ public class Tetris extends JPanel {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Tetris");
-            Tetris game = new Tetris();
-            frame.add(game);
-            frame.setSize(400, 800);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(800, 800);
+            frame.add(new Tetris());
             frame.setVisible(true);
-
-            new Timer(game.delay, e -> {
-                game.dropDown();
-                game.repaint();
-            }).start();
         });
     }
 }
